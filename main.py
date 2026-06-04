@@ -84,6 +84,23 @@ def parse_match(block):
     except:
         predictions = []
 
+    # translate short betting/player codes in prediction lines
+    def translate_betting_codes(s: str) -> str:
+        if not s:
+            return s
+        repl = {
+            'П1': 'Player one',
+            'П2': 'Player two',
+            'ТББ': 'Over (big)',
+            'ТММ': 'Under (big)',
+            'ТБ': 'Over',
+            'ТМ': 'Under',
+        }
+        pattern = re.compile(r"\b(П1|П2|ТББ|ТММ|ТБ|ТМ)\b")
+        return pattern.sub(lambda m: repl.get(m.group(0), m.group(0)), s)
+
+    predictions = [translate_betting_codes(p) for p in predictions]
+
     formatted = f"""
 {odds_line}
 GameCode: {game_code}
