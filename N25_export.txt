@@ -1,0 +1,15 @@
+
+Player one: БоРайЧо
+Player two: Рептилия
+
+Odds
+
+F 3.215/B 3.425/R 2.115
+F_Yes 3.215/F_No 1.37
+Lines: 26.5/32.5/39.5
+
+Games Win?
+
+Score Progress:
+
+5:2(1:0 F;1:1 F;2:1 F;2:2 F;3:2 B;4:2 B;5:2 R)

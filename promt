@@ -2,3 +2,23 @@ V1
 Lets Step By step Make a Bot 
 make a bot read a match.txt
 only read only read when read say read : True 
+
+
+
+code when round found must export this
+
+Player one Predator
+Player two : Johnny Cage
+
+Games Win?
+
+1. P1 - F - 35 Over
+2. P1 - B - 38 Over
+3. P1 - R - 28 Under
+4. P2 - R - 27 Under
+5. P1 - F - 25 Under
+6. 1 - F - 23 Under
+
+Score Progress:
+
+5 : 1 (1:0 F; 2:0 B; 3:0 R; 3:1 R; 4:1 F; 5:1 F)
