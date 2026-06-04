@@ -18,8 +18,14 @@ Suggestions
 
 Contact
 - If this repo is on GitHub, view commits, issues, projects and PRs on the web UI for full history.
+
 [Issues](https://github.com/shayanghad0/mortal-combat-database/issues)
+
 [PR](https://github.com/shayanghad0/mortal-combat-database/pulls)
+
 [Projects](https://github.com/shayanghad0/mortal-combat-database/projects?query=is%3Aopen)
+
 [Commits Main Branches](https://github.com/shayanghad0/mortal-combat-database/commits/main/)
+
 [Commits Main PR](https://github.com/shayanghad0/mortal-combat-database/commits/pr/)
+
