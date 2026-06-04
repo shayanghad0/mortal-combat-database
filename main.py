@@ -1,86 +1,97 @@
+from googletrans import Translator
 import re
 
-def extract_blocks(content):
+translator = Translator()
+
+def normalize(text):
+    return translator.translate(text, dest="en").text
+
+
+def extract_match(content, match_id):
     pattern = r"(^#N\d+.*?)(?=^#N\d+|\Z)"
-    return re.findall(pattern, content, re.MULTILINE | re.DOTALL)
+    blocks = re.findall(pattern, content, re.MULTILINE | re.DOTALL)
 
-def parse_match(block):
-    lines = [l.strip() for l in block.splitlines() if l.strip()]
+    for b in blocks:
+        if b.startswith(match_id):
+            return b
+    return None
 
-    # Match ID line
-    match_id_line = lines[0]
 
-    # Teams line
-    teams_line = lines[1] if len(lines) > 1 else ""
-    teams = teams_line.replace("#", "").split("-")
-    player1 = teams[0].strip() if len(teams) > 0 else "Unknown"
-    player2 = teams[1].strip() if len(teams) > 1 else "Unknown"
+def parse_block(block):
+    lines = [l.strip() for l in block.split("\n") if l.strip()]
 
-    # Odds line (find line containing P1/P2)
-    odds_line = next((l for l in lines if "P1/P2" in l), "")
+    # header
+    header = lines[0]
+    match = re.search(r"#N\d+\.\s*(.*?)\s*-\s*(.*)", header)
 
-    # Lines (numbers like 28.5/34.5)
-    lines_data = next((l for l in lines if re.match(r"^\d+(\.\d+)?(/\d+(\.\d+)?)*$", l)), "")
+    player1_ru = match.group(1).replace("#", "").strip()
+    player2_ru = match.group(2).replace("#", "").strip()
 
-    # Score line (last bracket line usually)
-    score_line = next((l for l in lines if "(" in l and ":" in l), "")
+    player1 = normalize(player1_ru)
+    player2 = normalize(player2_ru)
 
-    # Predictions (between odds and score)
-    try:
-        start = lines.index(odds_line) + 1
-        end = lines.index(score_line) if score_line in lines else len(lines)
-        predictions = lines[start:end]
-    except:
-        predictions = []
+    # odds + lines
+    odds = lines[3]
+    fbr = lines[4]
+    yesno = lines[5]
+    lines_data = lines[6]
 
-    formatted = f"""
+    # bets section
+    bets_start = 7
+    bets = []
+    i = 1
+
+    for line in lines[bets_start:]:
+        if line.startswith("2:") or "(" in line:
+            break
+        bets.append(f"{i}. {line}")
+        i += 1
+
+    # score
+    score_line = [l for l in lines if ":" in l and "(" in l]
+    score = score_line[0] if score_line else ""
+
+    return f"""
 Player one: {player1}
 Player two: {player2}
 
 Odds
-{odds_line}
-{next((l for l in lines if "F 3." in l), "")}
-{next((l for l in lines if "F_Yes" in l or "F Yes" in l), "")}
+{odds}
+{fbr}
+{yesno}
 Lines: {lines_data}
 
 Games Win?
 
-""" + "\n".join(predictions) + f"""
+{chr(10).join(bets)}
 
 Score Progress:
-
-{score_line}
+{score}
 """.strip()
-
-    return formatted
 
 
 def main():
     with open("match.txt", "r", encoding="utf-8") as f:
         content = f.read()
 
-    blocks = extract_blocks(content)
+    print("Read: True")
 
-    print(f"Read: True")
-    print(f"{len(blocks)} match code found")
+    match_id = input("Enter match id (example #N215): ").strip()
 
-    match_id = input("Enter match id (example N215): ").strip()
+    block = extract_match(content, match_id)
 
-    if not match_id.startswith("#"):
-        match_id = "#" + match_id
+    if not block:
+        print("Match not found")
+        return
 
-    for block in blocks:
-        if block.startswith(match_id):
-            result = parse_match(block)
+    result = parse_block(block)
 
-            with open(f"{match_id.replace('#','')}_export.txt", "w", encoding="utf-8") as f:
-                f.write(result)
+    filename = match_id.replace("#", "") + "_export.txt"
 
-            print("Export Done")
-            print(result)
-            return
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(result)
 
-    print("Match not found")
+    print("Export done:", filename)
 
 
 if __name__ == "__main__":
