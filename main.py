@@ -26,26 +26,89 @@ def transliterate_ru_to_en(text: str) -> str:
     return ''.join(result)
 
 
+def normalize_key(name: str) -> str:
+    # stronger normalization for MK character matching
+    return re.sub(r"[^\w\u0400-\u04FF]", "", name).lower()
+
+
 def map_character_name(name: str) -> str:
     if not name:
         return name
-    key = re.sub(r"[^\w\u0400-\u04FF]", "", name).lower()
+
+    key = normalize_key(name)
+
     mapping = {
-        'люкенг':'Liu Kang','эрмак':'Ermac','горо':'Goro','ферраиторр':'FerraiTorr','скорпион':'Scorpion','кожаноелицо':'Leatherface','коталькан':'Kotal Kahn','кенши':'Kenshi','чужой':'Alien','джакс':'Jax','кэссикейдж':'Cassie Cage','куанчичи':'Quan Chi','куанчич':'Quan Chi','рептилия':'Reptile','тремор':'Tremor','кунглао':'Kung Lao','такедатакахаши':'Takeda','такеда':'Takeda','сабзиро':'Sub-Zero','триборг':'Triborg','джейсонвурхиз':'Jason Voorhees','хищник':'Predator','джонникейдж':'Johnny Cage','кунгджин':'Kung Jin','эрронблэк':'Erron Black','соняблейд':'Sonya Blade','шиннок':'Shinnok','дивора':'D\'Vorah','борaйчо':'Bo\' Rai Cho','борайчо':'Bo\' Rai Cho','джэкибрiggs':'Jacqui Briggs','милина':'Mileena','райден':'Raiden','райдэн':'Raiden','кано':'Kano','таня':'Tanya','китана':'Kitana'
+        # Core MKX roster
+        'scorpion': 'Scorpion',
+        'subzero': 'Sub-Zero',
+        'raiden': 'Raiden',
+        'liukang': 'Liu Kang',
+        'kunglao': 'Kung Lao',
+        'johnnycage': 'Johnny Cage',
+        'sonyablade': 'Sonya Blade',
+        'jax': 'Jax',
+        'kano': 'Kano',
+        'kenshi': 'Kenshi',
+        'kitana': 'Kitana',
+        'mileena': 'Mileena',
+        'reptilia': 'Reptile',
+        'reptile': 'Reptile',
+        'ermac': 'Ermac',
+        'quanchi': 'Quan Chi',
+        'shinnok': 'Shinnok',
+        'cassiecage': 'Cassie Cage',
+        'jacquibriggs': 'Jacqui Briggs',
+        'takeda': 'Takeda',
+        'takadatakahashi': 'Takeda',
+        'kungjin': 'Kung Jin',
+        'erronblack': 'Erron Black',
+        'kotalkahn': 'Kotal Kahn',
+        'dvorah': "D'Vorah",
+        'devorah': "D'Vorah",
+        'ferraitorr': 'Ferra/Torr',
+        'ferratorr': 'Ferra/Torr',
+
+        # DLC characters
+        'predator': 'Predator',
+        'alien': 'Alien',
+        'jasonvoorhees': 'Jason Voorhees',
+        'leatherface': 'Leatherface',
+        'booraicho': "Bo' Rai Cho",
+        'borraicho': "Bo' Rai Cho",
+        'tanya': 'Tanya',
+        'tremor': 'Tremor',
+        'triborg': 'Triborg',
+
+        # Extra variants / Cyrillic-friendly duplicates
+        'райден': 'Raiden',
+        'скорпион': 'Scorpion',
+        'сабзиро': 'Sub-Zero',
+        'люкенг': 'Liu Kang',
+        'кенши': 'Kenshi',
+        'джонникейдж': 'Johnny Cage',
+        'коталькан': 'Kotal Kahn',
+        'эрмак': 'Ermac',
+        'рептилия': 'Reptile',
+        'милина': 'Mileena',
+        'джакс': 'Jax',
     }
+
     if key in mapping:
         return mapping[key]
+
     return transliterate_ru_to_en(name)
 
 
 def parse_match(block: str) -> Dict:
     lines = [l.strip() for l in block.splitlines() if l.strip()]
     match_id_line = lines[0] if lines else ""
+
     m = re.search(r"#?([A-Za-z0-9]+)", match_id_line)
     game_code = m.group(1) if m else match_id_line.replace('#','')
 
     teams_line = lines[1] if len(lines) > 1 else ""
     teams = teams_line.replace("#", "").split("-")
+
     raw_p1 = teams[0].strip() if len(teams) > 0 else "Unknown"
     raw_p2 = teams[1].strip() if len(teams) > 1 else "Unknown"
 
@@ -55,6 +118,7 @@ def parse_match(block: str) -> Dict:
     odds_line = next((l for l in lines if "P1/P2" in l or "П1/П2" in l), "")
     p1_odds = None
     p2_odds = None
+
     m_odds = re.search(r"([0-9]+(?:\.[0-9]+)?)\s*/\s*([0-9]+(?:\.[0-9]+)?)", odds_line)
     if m_odds:
         try:
@@ -65,7 +129,7 @@ def parse_match(block: str) -> Dict:
             p2_odds = None
 
     score_line = next((l for l in lines if "(" in l and ":" in l), "")
-    # Predictions area
+
     try:
         start = lines.index(odds_line) + 1
         end = lines.index(score_line) if score_line in lines else len(lines)
@@ -118,18 +182,16 @@ def main():
 
     print(f"Read: True")
     print(f"{len(blocks)} match code found")
-    # loop so user can run multiple lookups; type 'exit' to quit
+
     while True:
-        print("(Type 'exit' at any prompt to quit)")
-        # New input sequence per request
+        print("(Type 'exit' to quit)")
+
         p1_input = input("Player one (Russian or English): ").strip()
         if p1_input.lower() in ('exit', 'quit', 'q'):
             break
+
         try:
-            raw = input("Player one multiplier (e.g. 1.64): ").strip()
-            if raw.lower() in ('exit', 'quit', 'q'):
-                break
-            p1_mult = float(raw)
+            p1_mult = float(input("Player one multiplier: ").strip())
         except:
             print("Invalid multiplier for player one")
             continue
@@ -137,16 +199,14 @@ def main():
         p2_input = input("Player two (Russian or English): ").strip()
         if p2_input.lower() in ('exit', 'quit', 'q'):
             break
+
         try:
-            raw = input("Player two multiplier (e.g. 2.375): ").strip()
-            if raw.lower() in ('exit', 'quit', 'q'):
-                break
-            p2_mult = float(raw)
+            p2_mult = float(input("Player two multiplier: ").strip())
         except:
             print("Invalid multiplier for player two")
             continue
 
-        gid = input("Optional game ID (example 215) or leave empty: ").strip()
+        gid = input("Optional game ID: ").strip()
         if gid.lower() in ('exit', 'quit', 'q'):
             break
 
@@ -154,13 +214,13 @@ def main():
         norm_p2 = normalize_for_compare(p2_input)
 
         found_any = False
+
         for block in blocks:
             parsed = parse_match(block)
             game_code = parsed['game_code']
 
-            if gid:
-                if gid not in game_code:
-                    continue
+            if gid and gid not in game_code:
+                continue
 
             parsed_p1 = normalize_for_compare(parsed['player1'])
             parsed_p2 = normalize_for_compare(parsed['player2'])
@@ -173,7 +233,6 @@ def main():
             else:
                 continue
 
-            # if swapped, interpret multipliers accordingly
             if not swapped:
                 status1 = compare_multiplier(parsed['p1_odds'], p1_mult)
                 status2 = compare_multiplier(parsed['p2_odds'], p2_mult)
@@ -181,23 +240,19 @@ def main():
                 status1 = compare_multiplier(parsed['p1_odds'], p2_mult)
                 status2 = compare_multiplier(parsed['p2_odds'], p1_mult)
 
-            # Decide export criteria: both 100% OR both >=85%
             both_100 = (status1 == '100' and status2 == '100')
-            both_85_or_100 = (status1 in ('100','85') and status2 in ('100','85'))
+            both_85 = (status1 in ('100','85') and status2 in ('100','85'))
 
-            if both_100 or both_85_or_100:
+            if both_100 or both_85:
                 found_any = True
-                label = '100%' if both_100 else '>=85%'
-                print('\n--- MATCH FOUND ---')
-                print(f'GameCode: {game_code}  Match type: {label}')
+                print("\n--- MATCH FOUND ---")
                 print(parsed['formatted'])
-                print(f"Player1 multiplier status: {status1}, Player2 multiplier status: {status2}")
+                print(f"Status: P1={status1}, P2={status2}")
 
         if not found_any:
-            print("No matches found matching the given names/multipliers and optional game ID.")
+            print("No matches found.")
 
-        again = input("\nSearch again? Press Enter to continue or type 'exit' to quit: ").strip()
-        if again.lower() in ('exit', 'quit', 'q'):
+        if input("\nContinue? (Enter/exit): ").strip().lower() in ('exit','quit','q'):
             break
 
 
